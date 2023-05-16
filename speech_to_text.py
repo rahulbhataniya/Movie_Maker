@@ -1,4 +1,6 @@
 # importing libraries
+import subprocess
+import ffmpeg as ff
 import speech_recognition as sr
 import os
 from pydub import AudioSegment
@@ -22,7 +24,7 @@ def transcribe_audio(path):
 # a function that splits the audio file into chunks on silence
 # and applies speech recognition
 
-
+start_end_subtitle=[]
 def get_large_audio_transcription_on_silence(path):
     """Splitting the large audio file into chunks
     and apply speech recognition on each of these chunks"""
@@ -31,7 +33,7 @@ def get_large_audio_transcription_on_silence(path):
     # split audio sound where silence is 500 miliseconds or more and get chunks
     start_end_time,chunks = split_on_silence.split_on_silence(sound,
                               # experiment with this value for your target audio file
-                              min_silence_len=100,
+                              min_silence_len=50,
                               # adjust this per requirement
                               silence_thresh=sound.dBFS-14,
                               # keep the silence for 1 second, adjustable as well
@@ -57,9 +59,27 @@ def get_large_audio_transcription_on_silence(path):
         else:
             text = f"{text.capitalize()}. "
             print(chunk_filename, ":", text)
+            if(len(text)>0):
+                    start_end_time[i-1].append(text)
+                    start_end_subtitle.append(start_end_time[i-1])
             whole_text += text
+        if i==20:
+            break
     # return the text for all chunks detected
     return whole_text
 
+def trim_video(input_file, output_file, start_time, end_time):
+    ffmpeg_cmd = f'ffmpeg -i {input_file} -ss {start_time} -to {end_time} -c:v libx264 -c:a aac {output_file}'
+    subprocess.call(ffmpeg_cmd, shell=True)
+
+def genrate_video_clips():
+    folder_name = "video_clips"
+    if not os.path.isdir(folder_name):
+        os.mkdir(folder_name)
+    for i, video_start_end in enumerate(start_end_subtitle):
+        clip_filename = os.path.join(folder_name, f"clip{i}.mp4")
+        trim_video('static/input/videoplayback.mp4', output_file=clip_filename, start_time=video_start_end[0], end_time=video_start_end[1])
 
 print(get_large_audio_transcription_on_silence('static/output/audio.wav'))
+genrate_video_clips()
+
