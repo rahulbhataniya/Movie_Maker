@@ -22,7 +22,8 @@ def detect_silence(audio_segment, min_silence_len=1000, silence_thresh=-16, seek
         return []
 
     # convert silence threshold to a float value (so we can compare it to rms)
-    silence_thresh = db_to_float(silence_thresh) * audio_segment.max_possible_amplitude
+    silence_thresh = db_to_float(silence_thresh) * \
+        audio_segment.max_possible_amplitude
 
     # find silence and add start and end indicies to the to_cut list
     silence_starts = []
@@ -82,7 +83,8 @@ def detect_nonsilent(audio_segment, min_silence_len=1000, silence_thresh=-16, se
     silence_thresh - the upper bound for how quiet is silent in dFBS
     seek_step - step size for interating over the segment in ms
     """
-    silent_ranges = detect_silence(audio_segment, min_silence_len, silence_thresh, seek_step)
+    silent_ranges = detect_silence(
+        audio_segment, min_silence_len, silence_thresh, seek_step)
     len_seg = len(audio_segment)
 
     # if there is no silence, the whole thing is nonsilent
@@ -144,9 +146,9 @@ def split_on_silence(audio_segment, min_silence_len=1000, silence_thresh=-16, ke
         keep_silence = len(audio_segment) if keep_silence else 0
 
     output_ranges = [
-        [ start - keep_silence, end + keep_silence ]
-        for (start,end)
-            in detect_nonsilent(audio_segment, min_silence_len, silence_thresh, seek_step)
+        [start - keep_silence, end + keep_silence]
+        for (start, end)
+        in detect_nonsilent(audio_segment, min_silence_len, silence_thresh, seek_step)
     ]
 
     for range_i, range_ii in pairwise(output_ranges):
@@ -155,10 +157,12 @@ def split_on_silence(audio_segment, min_silence_len=1000, silence_thresh=-16, ke
         if next_start < last_end:
             range_i[1] = (last_end+next_start)//2
             range_ii[0] = range_i[1]
-            
-    start_end_time=[[(max(start,0))//1000,(min(end,len(audio_segment)))//1000] for start ,end in output_ranges]
-    chunk=[audio_segment[ max(start,0) : min(end,len(audio_segment)) ] for start,end in output_ranges]
-    return start_end_time,chunk
+
+    start_end_time = [[(max(start, 0))/1000, (min(end, len(audio_segment)))/1000]
+                      for start, end in output_ranges]
+    chunk = [audio_segment[max(start, 0): min(end, len(audio_segment))]
+             for start, end in output_ranges]
+    return start_end_time, chunk
 
 
 def detect_leading_silence(sound, silence_threshold=-50.0, chunk_size=10):
@@ -169,11 +173,10 @@ def detect_leading_silence(sound, silence_threshold=-50.0, chunk_size=10):
     silence_threshold - the upper bound for how quiet is silent in dFBS
     chunk_size - chunk size for interating over the segment in ms
     """
-    trim_ms = 0 # ms
-    assert chunk_size > 0 # to avoid infinite loop
+    trim_ms = 0  # ms
+    assert chunk_size > 0  # to avoid infinite loop
     while sound[trim_ms:trim_ms+chunk_size].dBFS < silence_threshold and trim_ms < len(sound):
         trim_ms += chunk_size
 
     # if there is no end it should return the length of the segment
     return min(trim_ms, len(sound))
-
